@@ -4,7 +4,17 @@ import quandl
 import re
 import psycopg2
 from datetime import datetime
+import logging
 import sys
+
+logger = logging.getLogger('HKEX Scheduler')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('/var/log/cronjob.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
 
 df_input = '%Y-%m-%d'
 df_webInput = '%y%m%d'
