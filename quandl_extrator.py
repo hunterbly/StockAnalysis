@@ -33,7 +33,7 @@ for i in range(len(sys.argv)):
 connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
 
 # date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
-date = datetime.strptime('2018-10-24', df_input)
+date = datetime.strptime('2018-10-25', df_input)
 
 print('Checking data...')
 try:
@@ -105,7 +105,19 @@ result['volume'] = result['volume'] * 1000
 result['turnover'] = result['turnover'] * 1000
 
 result = result.dropna()
-result = result.loc[result.date == date]
+df = result.loc[result.date == date]
 
-print(result)
+print(df)
 
+if len(df) > 0:
+    df_columns = df..columns.values.tolist()
+    # create (col1,col2,...)
+    columns = ",".join(df_columns)
+
+    # create VALUES('%s', '%s",...) one '%s' per column
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns)) 
+
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
+
+print(insert_stmt)
