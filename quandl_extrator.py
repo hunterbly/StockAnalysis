@@ -3,6 +3,8 @@ import pandas as pd
 import quandl
 import re
 import psycopg2
+from datetime import datetime
+import sys
 
 df_input = '%Y-%m-%d'
 df_webInput = '%y%m%d'
@@ -20,26 +22,27 @@ for i in range(len(sys.argv)):
 
 connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
 
-date = datetime.now() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+# date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+date = datetime.strptime('2018-10-25', df_input)
 
-print('Checking data...')
-try:
-    conn = psycopg2.connect(connstion_string)
-except:
-    exit('Error: Unable to connect to the database')
-try:
-    cur = conn.cursor()
-    sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
-    data=[date]
-    cur.execute(sql,data)
-    result = cur.fetchone()
-    conn.commit()
-    conn.close()
-except:
-    print('Error: SQL error')
+# print('Checking data...')
+# try:
+#     conn = psycopg2.connect(connstion_string)
+# except:
+#     exit('Error: Unable to connect to the database')
+# try:
+#     cur = conn.cursor()
+#     sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
+#     data=[date]
+#     cur.execute(sql,data)
+#     result = cur.fetchone()
+#     conn.commit()
+#     conn.close()
+# except:
+#     print('Error: SQL error')
 
-if result[0] != 0:
-    exit(date.strftime(df_input) + ' exists')
+# if result[0] != 0:
+#     exit(date.strftime(df_input) + ' exists')
 
 # Defind empty dataframe for output
 result = pd.DataFrame()
@@ -52,7 +55,7 @@ real_col = ""
 # stockListAll = list(range(1,4000)) + list(range(4601,4609)) + list(range(6030,6031)) + list(range(6099,6900))
 # stockListNotOption = [x for x in stockListAll if x not in stockListOption] 
 # seqList = [stockListOption, stockListNotOption]
-stockListOption = range(1, 5)
+stockListOption = range(1, 2)
 seqList = [stockListOption]
 
 for stockList in seqList:
@@ -91,5 +94,8 @@ result = result[['date', 'ask', 'bid', 'open', 'high', 'low', 'close', 'volume',
 result['volume'] = result['volume'] * 1000
 result['turnover'] = result['turnover'] * 1000
 
-print(result)
+result = result.dropna()
+
+
+print(date)
 
