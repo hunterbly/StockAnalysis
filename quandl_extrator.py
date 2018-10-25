@@ -1,8 +1,45 @@
 import requests
-import json
 import pandas as pd
 import quandl
 import re
+import psycopg2
+
+df_input = '%Y-%m-%d'
+df_webInput = '%y%m%d'
+df_cell = '%b%y'
+
+arg = {
+    '-d': '',
+    '-i': '3',
+    '-ip': 'localhost' 
+}
+
+for i in range(len(sys.argv)):
+    if sys.argv[i] in arg:
+        arg[sys.argv[i]] = sys.argv[i+1]
+
+connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
+
+date = datetime.now() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+
+print('Checking data...')
+try:
+    conn = psycopg2.connect(connstion_string)
+except:
+    exit('Error: Unable to connect to the database')
+try:
+    cur = conn.cursor()
+    sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
+    data=[date]
+    cur.execute(sql,data)
+    result = cur.fetchone()
+    conn.commit()
+    conn.close()
+except:
+    print('Error: SQL error')
+
+if result[0] != 0:
+    exit(date.strftime(df_input) + ' exists')
 
 # Defind empty dataframe for output
 result = pd.DataFrame()
