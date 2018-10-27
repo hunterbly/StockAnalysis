@@ -1,8 +1,63 @@
 import requests
-import json
 import pandas as pd
 import quandl
 import re
+import psycopg2
+import psycopg2.extras
+from datetime import datetime
+import logging
+import sys
+
+logger = logging.getLogger('Stock Price Scheduler')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('/var/log/cronjob.log')
+ch = logging.StreamHandler()
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
+
+
+df_input = '%Y-%m-%d'
+df_webInput = '%y%m%d'
+df_cell = '%b%y'
+
+arg = {
+    '-d': '',
+    '-i': '3',
+    '-ip': 'localhost' 
+}
+
+for i in range(len(sys.argv)):
+    if sys.argv[i] in arg:
+        arg[sys.argv[i]] = sys.argv[i+1]
+
+connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
+
+date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+# date = datetime.strptime('2018-10-25', df_input)
+
+logger.info('Checking data...')
+# try:
+#     conn = psycopg2.connect(connstion_string)
+# except:
+#     exit('Error: Unable to connect to the database')
+# try:
+#     cur = conn.cursor()
+#     sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
+#     data=[date]
+#     cur.execute(sql,data)
+#     result = cur.fetchone()
+#     conn.commit()
+#     conn.close()
+# except:
+#     print('Error: SQL error')
+
+# if result[0] != 0:
+#     exit(date.strftime(df_input) + ' exists')
 
 # Defind empty dataframe for output
 result = pd.DataFrame()
@@ -22,10 +77,10 @@ for stockList in seqList:
         code        = str(num).zfill(5)
         code_str    = "HKEX/{}".format(code)
         
-        print("=======================================") 
-        print("Start getting - {}".format(code))
+        logger.info("=======================================") 
+        logger.info("Start getting - {}".format(code))
         try:
-            data = quandl.get(code_str, rows=1)
+            data = quandl.get(code_str, rows=10)
             data['code'] = code
             
             col_name = data.columns.tolist()
@@ -35,53 +90,46 @@ for stockList in seqList:
             data.rename(columns=col_dict, inplace=True)
 
             result = pd.concat([result, data], sort=True)
-            print(result.tail())
-        except:
+            logger.info("Finished getting - {}".format(code))
+        except Exception as e:
             print("No record")
+            print(e)
             pass
 
-# data.columns = ['date', 'ask','bid', 'change', 'high', 'lot_size', 'low', 'net_change', 'close', 'pe', 'open', 'volume', 'turnover', 'code']
-# result.columns = real_col
-print(result)
+result = result.reset_index()
 
-# for i in range(1,3000):
-#     print("=======================================")
-#     code = str(i).zfill(5)
-#     url = 'https://www.quandl.com/api/v3/datasets/HKEX/{}?limit=10'.format(code)
-#     print(url)
-#     r = requests.get(url)
-#     print(r.content)
-#     print("=======================================")
+old_col = result.columns.values.tolist()
+new_col = ['date', 'ask', 'bid', 'change', 'high', 'lot_size', 'low', 'net_change', 'close', 'pe', 'open', 'volume', 'turnover', 'code']
+rename_col_dict = dict(zip(old_col, new_col))
+result = result.rename(columns = rename_col_dict)
 
-# result_list = []
+result = result[['date', 'ask', 'bid', 'open', 'high', 'low', 'close', 'volume', 'turnover', 'code']]
 
-# for i in range(1,5):
-#     date = '2018-10-19'
-#     # code = str(1).zfill(5)
-#     code = str(i).zfill(5)
-#     url = 'https://www.quandl.com/api/v3/datasets/HKEX/{}?limit=10'.format(code)
+result['volume'] = result['volume'] * 1000
+result['turnover'] = result['turnover'] * 1000
 
-#     r = requests.get(url)
-#     content = r.content.decode("utf-8")
-#     print(content)
-#     data_json = json.loads(content)
-#     data_list = data_json['dataset']['data']
+result = result.dropna()
+df = result.loc[result.date == date]
 
-#     # df = pd.DataFrame(data_list)
-#     # df.columns = ['date', 'close','net_change', 'change', 'bid', 'ask', 'pe', 'high', 'low', 'open', 'volume', 'turnover','lot_size']
-#     # df['code'] = code
-#     # df_selected = df.loc[df['date']== date]
-#     # print(df_selected)
-#     # result.append(df_selected)
+print(df)
 
-#     for record in data_list:
-#         if record[0] == date:
-#             #row = record.append(code)
-#             row = record
-#             print(row)
-#         else:
-#             pass
+if len(df) > 0:
+    logger.info("Writing to Database")
+    df_columns = df.columns.values.tolist()
+    # create (col1,col2,...)
+    columns = ",".join(df_columns)
 
-#     result_list.append(row)    
+    # create VALUES('%s', '%s",...) one '%s' per column
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
 
-# print(result_list)
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
+
+    conn = psycopg2.connect(connstion_string)
+
+    cur = conn.cursor()
+    psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+    conn.commit()
+    conn.close()
+
+logger.info("Finished")
