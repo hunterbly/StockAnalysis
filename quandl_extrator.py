@@ -110,12 +110,12 @@ df = result.loc[result.date == date]
 print(df)
 
 if len(df) > 0:
-    df_columns = df..columns.values.tolist()
+    df_columns = df.columns.values.tolist()
     # create (col1,col2,...)
     columns = ",".join(df_columns)
 
     # create VALUES('%s', '%s",...) one '%s' per column
-    values = "VALUES({})".format(",".join(["%s" for _ in df_columns)) 
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
 
     #create INSERT INTO table (columns) VALUES('%s',...)
     insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
