@@ -37,23 +37,23 @@ date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strpti
 # date = datetime.strptime('2018-10-25', df_input)
 
 logger.info('Checking data...')
-try:
-    conn = psycopg2.connect(connstion_string)
-except:
-    exit('Error: Unable to connect to the database')
-try:
-    cur = conn.cursor()
-    sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
-    data=[date]
-    cur.execute(sql,data)
-    result = cur.fetchone()
-    conn.commit()
-    conn.close()
-except:
-    print('Error: SQL error')
+# try:
+#     conn = psycopg2.connect(connstion_string)
+# except:
+#     exit('Error: Unable to connect to the database')
+# try:
+#     cur = conn.cursor()
+#     sql = ' SELECT COUNT(1) FROM public.stock WHERE date = %s '
+#     data=[date]
+#     cur.execute(sql,data)
+#     result = cur.fetchone()
+#     conn.commit()
+#     conn.close()
+# except:
+#     print('Error: SQL error')
 
-if result[0] != 0:
-    exit(date.strftime(df_input) + ' exists')
+# if result[0] != 0:
+#     exit(date.strftime(df_input) + ' exists')
 
 # Defind empty dataframe for output
 result = pd.DataFrame()
@@ -86,8 +86,10 @@ for stockList in seqList:
             data.rename(columns=col_dict, inplace=True)
 
             result = pd.concat([result, data], sort=True)
-        except:
+            print(result.tail())
+        except Exception as e:
             print("No record")
+            print(e)
             pass
 
 result = result.reset_index()
