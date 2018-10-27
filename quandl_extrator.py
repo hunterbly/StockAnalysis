@@ -11,10 +11,14 @@ import sys
 logger = logging.getLogger('Stock Price Scheduler')
 logger.setLevel(logging.DEBUG)
 fh = logging.FileHandler('/var/log/cronjob.log')
+ch = logging.StreamHandler()
+
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 fh.setFormatter(formatter)
+ch.setFormatter(formatter)
 logger.addHandler(fh)
+logger.addHandler(ch)
 
 
 df_input = '%Y-%m-%d'
@@ -86,7 +90,7 @@ for stockList in seqList:
             data.rename(columns=col_dict, inplace=True)
 
             result = pd.concat([result, data], sort=True)
-            print(result.tail())
+            logger.info("Finished getting - {}".format(code))
         except Exception as e:
             print("No record")
             print(e)
