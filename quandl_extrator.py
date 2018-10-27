@@ -120,4 +120,11 @@ if len(df) > 0:
     #create INSERT INTO table (columns) VALUES('%s',...)
     insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
 
+    conn = psycopg2.connect(connstion_string)
+
+    cur = conn.cursor()
+    psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+    conn.commit()
+    conn.close()
+
 print(insert_stmt)
