@@ -77,10 +77,11 @@ for stockList in seqList:
         code        = str(num).zfill(5)
         code_str    = "HKEX/{}".format(code)
         
-        logger.info("Checking if data is available")
+        
 
         # Check if data is available yet
         if num == 1:
+            logger.info("Checking if data is available")
             data = quandl.get(code_str, rows=10)
             date_list = data.index.tolist()
 
