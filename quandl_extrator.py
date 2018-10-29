@@ -85,7 +85,7 @@ for stockList in seqList:
             date_list = data.index.tolist()
 
             if date not in date_list:
-                logger.info("Data not available yet. Please try again later")
+                logger.info("Data for {} is not available yet. Please try again later".format(date))
                 sys.exit(0)
 
         logger.info("=======================================") 
