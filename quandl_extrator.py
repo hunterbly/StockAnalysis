@@ -84,9 +84,7 @@ for stockList in seqList:
             data = quandl.get(code_str, rows=10)
             date_list = data.index.tolist()
 
-            if date in date_list:
-                pass
-            else:
+            if date not in date_list:
                 logger.info("Data not available yet. Please try again later")
                 sys.exit(0)
 
