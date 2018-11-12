@@ -146,4 +146,37 @@ if len(df) > 0:
     conn.commit()
     conn.close()
 
+    logger.info("Finished insert into stock")
+
+# Insert to old stock_price table
+if len(df) > 0:
+    
+    connstion_string = "dbname='stock_price' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
+
+    df.drop('ask', axis=1, inplace=True)
+    df.drop('bid', axis=1, inplace=True)
+    
+    # Assign adj price to zero
+    df.rename(columns={'turnover':'adj'}, inplace=True)
+    df['adj'] = np.nan
+
+    df_columns = df.columns.values.tolist()
+
+    columns = ",".join(df_columns)
+
+
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
+
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('stock_price', columns, values)
+
+    conn = psycopg2.connect(connstion_string)
+
+    cur = conn.cursor()
+    psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+    conn.commit()
+    conn.close()
+
+    logger.info("Finished insert into stock_price")
+
 logger.info("Finished")
