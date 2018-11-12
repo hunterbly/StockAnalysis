@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import quandl
+import numpy as np
 import re
 import psycopg2
 import psycopg2.extras
