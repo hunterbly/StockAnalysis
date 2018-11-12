@@ -29,7 +29,7 @@ df_cell = '%b%y'
 arg = {
     '-d': '',
     '-i': '3',
-    '-ip': 'localhost' 
+    '-ip': 'localhost'
 }
 
 for i in range(len(sys.argv)):
@@ -69,16 +69,16 @@ real_col = ""
 # Define list of sequence for stock
 stockListOption = [1,2,3,4,5,6,11,12,16,17,19,23,27,66,135,151,175,267,293,330,358,386,388,390,489,494,688,700,728,762,823,857,883,902,914,939,941,992,998,1044,1088,1109,1113,1171,1186,1211,1288,1299,1336,1339,1359,1398,1800,1816,1880,1898,1919,1928,1988,2018,2038,2282,2318,2319,2328,2333,2388,2600,2601,2628,2777,2800,2822,2823,2827,2828,2888,2899,3323,3328,3800,3888,3968,3988,6030]
 stockListAll = list(range(1,4000)) + list(range(4601,4609)) + list(range(6030,6031)) + list(range(6099,6900))
-stockListNotOption = [x for x in stockListAll if x not in stockListOption] 
+stockListNotOption = [x for x in stockListAll if x not in stockListOption]
 seqList = [stockListOption, stockListNotOption]
 
 for stockList in seqList:
     for num in stockList:
-        
+
         code        = str(num).zfill(5)
         code_str    = "HKEX/{}".format(code)
-        
-        
+
+
 
         # Check if data is available yet
         if num == 1:
@@ -90,13 +90,13 @@ for stockList in seqList:
                 logger.info("Data for {} is not available yet. Please try again later".format(date))
                 sys.exit(0)
 
-        logger.info("=======================================") 
+        logger.info("=======================================")
         logger.info("Start getting - {}".format(code))
         try:
             data = quandl.get(code_str, rows=10)
             data['code'] = code
-            
-            
+
+
 
             col_name = data.columns.tolist()
             clean_col_name = [re.sub(r'\W+','', x) for x in col_name]
@@ -151,18 +151,17 @@ if len(df) > 0:
 
 # Insert to old stock_price table
 if len(df) > 0:
-    
+
     connstion_string = "dbname='stock_price' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
 
-    df.drop('ask', axis=1, inplace=True)
-    df.drop('bid', axis=1, inplace=True)
-    
+    df = df.drop('ask', axis=1)
+    df = df.drop('bid', axis=1)
+
     # Assign adj price to zero
-    df.rename(columns={'turnover':'adj'}, inplace=True)
+    df = df.rename(columns={'turnover':'adj'})
     df['adj'] = np.nan
 
     df_columns = df.columns.values.tolist()
-
     columns = ",".join(df_columns)
 
 
