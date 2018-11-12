@@ -152,7 +152,7 @@ if len(df) > 0:
 # Insert to old stock_price table
 if len(df) > 0:
 
-    connstion_string = "dbname='stock_price' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
+    connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
 
     df = df.drop('ask', axis=1)
     df = df.drop('bid', axis=1)
