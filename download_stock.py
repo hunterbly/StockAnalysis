@@ -85,8 +85,59 @@ def get_all_stock(date_str = "", nrow = 10):
 
     return(result)
 
+def insert_to_db(df):
+    connstion_string = "dbname='stock' user='postgres' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    df_columns = df.columns.values.tolist()
+    
+    # create (col1,col2,...)
+    columns = ",".join(df_columns)
+
+    # create VALUES('%s', '%s",...) one '%s' per column
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
+
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
+    try:
+        conn = psycopg2.connect(connstion_string)
+
+        cur = conn.cursor()
+        psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+        conn.commit()
+        conn.close()
+
+        logger.info("Finished insert into stock")
+        
+    except:
+        logger.warning("No database available")
+    
+
 def main():
+
+    ######
+    # Parse program arguments
+    ######
+
+    df_input = '%Y-%m-%d'
+
+    arg = {
+        '-d': '',
+        '-i': '3',
+        '-ip': 'localhost'
+    }
+
+    for i in range(len(sys.argv)):
+        if sys.argv[i] in arg:
+            arg[sys.argv[i]] = sys.argv[i+1]
+
+    date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+
+    ######
+    # Get data
+    ######
+
     res = get_all_stock()
+    insert_to_db(res)
+
     print(res)
 
 if __name__ == "__main__":
