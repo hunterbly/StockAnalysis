@@ -38,19 +38,19 @@ def get_stock(num, nrow = 10):
         col_dict = dict(zip(col_name, clean_col_name))
 
         data.rename(columns=col_dict, inplace=True)
-        logger.info("Finished getting {}".format(code))
+        logger.info("Finished getting - {}".format(code))
 
         return(data)
 
     except Exception as e:
-        logger.info("No record")
+        logger.info("No record - {}".format(code))
         print(e)
         pass
 
-def get_all_stock(date_str = "", nrow = 10):
+def get_all_stock(date = "", nrow = 10):
 
     stock_list = get_list()
-    stock_list = stock_list[1:10]
+    stock_list = stock_list[0:10]
 
     result = pd.DataFrame()
 
@@ -80,12 +80,13 @@ def get_all_stock(date_str = "", nrow = 10):
 
     result = result.dropna()
 
-    if(date_str != ""):
-        result = result.loc[result.date == date_str]
+    if(date != ""):
+        result = result.loc[result.date == date]
 
     return(result)
 
 def insert_to_db(df):
+
     connstion_string = "dbname='stock' user='postgres' host='" + 'localhost' + "' password='P@ssw0rDB'"
     df_columns = df.columns.values.tolist()
     
@@ -106,7 +107,7 @@ def insert_to_db(df):
         conn.close()
 
         logger.info("Finished insert into stock")
-        
+
     except:
         logger.warning("No database available")
     
@@ -129,16 +130,27 @@ def main():
         if sys.argv[i] in arg:
             arg[sys.argv[i]] = sys.argv[i+1]
 
-    date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
+    if arg['-d'] == 'All':
+        date = 'All'
+    else:
+        date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date().strftime(df_input)
+
+    logger.info('Getting data for date - {}'.format(date))
 
     ######
     # Get data
     ######
-
-    res = get_all_stock()
-    insert_to_db(res)
+    if (date == 'All'):
+        # Get all data if arg[-d] == All
+        res = get_all_stock(date = '', nrow=None)
+    else:
+        res = get_all_stock(date = date)
+    
+    if len(res) > 0:
+        insert_to_db(res)
 
     print(res)
+    logger.info("Finished downloading data - {}".format(date))
 
 if __name__ == "__main__":
     main()
