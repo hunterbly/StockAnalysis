@@ -236,6 +236,7 @@ def main():
     
     if len(res) > 0:
         insert_to_db(res)
+        logger.info("Insert into database - Testing")    
 
     print(res)
     logger.info("Finished downloading data - {}".format(date))
