@@ -6,8 +6,11 @@ import re
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
-import logging
+from utils.logger import setup_logger
 import sys
+
+__all__ = 'Quandl Stock'
+logger = setup_logger(__all__)
 
 result = pd.DataFrame()
 quandl.ApiConfig.api_key = "nNXFy-SJNtuz6mvifMe3"
@@ -35,11 +38,12 @@ def get_stock(num, nrow = 10):
         col_dict = dict(zip(col_name, clean_col_name))
 
         data.rename(columns=col_dict, inplace=True)
+        logger.info("Finished getting {}".format(code))
 
         return(data)
 
     except Exception as e:
-        print("No record")
+        logger.info("No record")
         print(e)
         pass
 
