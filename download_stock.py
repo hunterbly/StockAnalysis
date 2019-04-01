@@ -31,7 +31,7 @@ def check_availability(date):
     data = get_stock(num = 1, nrow = 10)
     date_list = data.index.tolist()
 
-    if date not in date_list:
+    if datetime.strptime(date, '%Y-%m-%d') not in date_list:
         logger.info("Data for {} is not available yet. Please try again later".format(date))
         sys.exit(0)
 
@@ -216,7 +216,7 @@ def main():
     else:
         date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date().strftime(df_input)
         check_availability(date)
-        
+
     ######
     # Check Availability
     ######
