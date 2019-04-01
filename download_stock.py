@@ -16,6 +16,25 @@ result = pd.DataFrame()
 quandl.ApiConfig.api_key = "nNXFy-SJNtuz6mvifMe3"
 
 def check_availability(date):
+    """ 
+    Send single request to API to see if the latest data is available 
+    
+    Args:
+        date (str): Date in YYYY-MM-DD format. Must be within the latest 10 days
+
+    Returns:
+        None
+    """
+    
+    logger.info("Checking if data is available")
+
+    data = get_stock(num = 1, nrow = 10)
+    date_list = data.index.tolist()
+
+    if date not in date_list:
+        logger.info("Data for {} is not available yet. Please try again later".format(date))
+        sys.exit(0)
+
     return None
 
 def get_list():
@@ -196,7 +215,8 @@ def main():
         date = 'All'
     else:
         date = datetime.now().strftime(df_input) if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date().strftime(df_input)
-
+        check_availability(date)
+        
     ######
     # Check Availability
     ######
