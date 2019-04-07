@@ -5,55 +5,13 @@ import logging
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-logger = logging.getLogger('HKEX Scheduler')
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('/var/log/cronjob.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-fh.setFormatter(formatter)
-logger.addHandler(fh)
 
 df_input = '%Y-%m-%d'
 df_webInput = '%y%m%d'
 df_cell = '%b%y'
 
-arg = {
-    '-d': '',
-    '-i': '3',
-    '-ip': 'localhost'
-}
-
-for i in range(len(sys.argv)):
-    if sys.argv[i] in arg:
-        arg[sys.argv[i]] = sys.argv[i+1]
-
-connstion_string = "dbname='stock' user='postgres' host='" + arg['-ip'] + "' password='P@ssw0rDB'"
-
-date = datetime.now() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input)
-
-logger.info('Checking data...')
-
-try:
-    conn = psycopg2.connect(connstion_string)
-except:
-    logger.error('Error: Unable to connect to the database')
-    exit('Error: Unable to connect to the database')
-try:
-    cur = conn.cursor()
-    sql = " SELECT COUNT(1) FROM public.ccass WHERE date = '{0}' ".format(date.strftime(df_input))
-    cur.execute(sql)
-    result = cur.fetchone()
-    conn.commit()
-    conn.close()
-
-except:
-    logger.error('Error: SQL error')
-
-if result[0] != 0:
-    logger.info(date.strftime(df_input) + ' already exist')
-    exit(date.strftime(df_input) + ' already exist')
-
-logger.info('Connecting to the website...')
+date = datetime.now()
 
 try:
     #url = 'https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/dqe' + date.strftime(df_webInput) + '.htm'
