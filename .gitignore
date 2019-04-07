@@ -112,3 +112,5 @@ venv.bak/
 
 # log
 .log
+
+.test.py
