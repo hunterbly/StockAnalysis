@@ -271,8 +271,7 @@ def main():
 
     if len(res) > 0:
         insert_to_db(res)
-        logger.info("Insert into database - Testing")
-
+        
     logger.info("Finished downloading data - {}".format(date))
 
 if __name__ == "__main__":
