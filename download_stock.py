@@ -16,16 +16,16 @@ result = pd.DataFrame()
 quandl.ApiConfig.api_key = "nNXFy-SJNtuz6mvifMe3"
 
 def check_availability(date):
-    """ 
-    Send single request to API to see if the latest data is available 
-    
+    """
+    Send single request to API to see if the latest data is available
+
     Args:
         date (str): Date in YYYY-MM-DD format. Must be within the latest 10 days
 
     Returns:
         None
     """
-    
+
     logger.info("Checking if data is available")
 
     data = get_stock(num = 1, nrow = 10)
@@ -37,8 +37,43 @@ def check_availability(date):
 
     return None
 
+def check_db_records(date):
+    """
+    Check if there is records in the database, exit program if there is
+
+    Args:
+        date (str): Date in YYYY-MM-DD format. Must be within the latest 10 days
+
+    Returns:
+        None
+    """
+
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+
+    if (date == 'All'):
+        count_stmt = "SELECT COUNT(1) FROM stock"
+    else:
+        count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
+
+    try:
+        conn = psycopg2.connect(connection_string)
+        cur = conn.cursor()
+        cur.execute(count_stmt)
+        result = cur.fetchall()
+        conn.close()
+
+        logger.info('No records in Database for date - {}'.format(date))
+    except:
+        logger.warning("Something wrong with date checking in database")
+
+    if result[0][0] != 0:           # Return the first  element in the tuple
+        logger.warning('Records exists in database for {}'.format(date))
+        sys.exit()
+
+    return None
+
 def get_list():
-    
+
     """
     Get a full list of stock code with those with option at the front
 
@@ -69,7 +104,7 @@ def get_stock(num, nrow = 10):
     Call Quandl API to get the historical data for the stock number
 
     Args:
-        num (num): Stock num 
+        num (num): Stock num
         nrow (num): No of rows specified in the API calls. Default 10
 
     Returns:
@@ -131,7 +166,7 @@ def get_all_stock(date = "", nrow = 10):
     """
 
     stock_list = get_list()
-    stock_list = stock_list[0:10]
+    #stock_list = stock_list[0:10]
 
     result = pd.DataFrame()
 
@@ -146,7 +181,7 @@ def get_all_stock(date = "", nrow = 10):
             pass
 
     result = result.reset_index()
-    
+
     # Rename column
     old_col = result.columns.values.tolist()
     new_col = ['date', 'ask', 'bid', 'change', 'high', 'lot_size', 'low', 'net_change', 'close', 'pe', 'open', 'volume', 'turnover', 'code']
@@ -168,9 +203,9 @@ def get_all_stock(date = "", nrow = 10):
 
 def insert_to_db(df):
 
-    connstion_string = "dbname='stock' user='postgres' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
     df_columns = df.columns.values.tolist()
-    
+
     # create (col1,col2,...)
     columns = ",".join(df_columns)
 
@@ -180,7 +215,7 @@ def insert_to_db(df):
     #create INSERT INTO table (columns) VALUES('%s',...)
     insert_stmt = "INSERT INTO {} ({}) {}".format('stock', columns, values)
     try:
-        conn = psycopg2.connect(connstion_string)
+        conn = psycopg2.connect(connection_string)
 
         cur = conn.cursor()
         psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
@@ -191,7 +226,7 @@ def insert_to_db(df):
 
     except:
         logger.warning("No database available")
-    
+
 
 def main():
 
@@ -218,14 +253,14 @@ def main():
         check_availability(date)
 
     ######
-    # Check Availability
+    # Check database records
     ######
-    
+    check_db_records(date)
 
     ######
     # Get data
     ######
-    
+
     logger.info('Getting data for date - {}'.format(date))
 
     if (date == 'All'):
@@ -233,12 +268,11 @@ def main():
         res = get_all_stock(date = '', nrow=None)
     else:
         res = get_all_stock(date = date)
-    
+
     if len(res) > 0:
         insert_to_db(res)
-        logger.info("Insert into database - Testing")    
+        logger.info("Insert into database - Testing")
 
-    print(res)
     logger.info("Finished downloading data - {}".format(date))
 
 if __name__ == "__main__":
