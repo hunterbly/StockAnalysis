@@ -114,3 +114,4 @@ venv.bak/
 .log
 
 test.py
+.ftpconfig
