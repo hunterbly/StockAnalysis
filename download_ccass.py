@@ -106,7 +106,7 @@ def get_or_post_data(method, url, data=None, headers=None):
             count += 1
 
 def main():
-    logger.info("Testing")
+    logger.info("Start main function")
 
     ######
     # Parse program arguments
@@ -199,20 +199,24 @@ def parse_data(page_source, stock_code, date):
         # Get all rows relating to CCASS shareholding
         # Only if there are CCASS shareholding in the first place
         logger.info('Collecting CCASS shareholding.')
-        ccass_participant_shareholding_table = soup.find('table', {'id': 'participantShareholdingList'})
+        ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
 
         try:
             ccass_participant_shareholding_rows = ccass_participant_shareholding_table.find_all('tr')
         except:
             return None
-        for row in ccass_participant_shareholding_rows:
-            organized_row = [i.get_text().strip() for i in row.find_all('td')]
+        for counter, row in enumerate(ccass_participant_shareholding_rows):
+            if counter == 0:
+                pass
+            else:
+                organized_row = [i.get_text().strip() for i in row.find_all('td')]
+                print(organized_row)
 
             # Ensure rows are not empty or the header row
-            if not organized_row == ['']:
-                row_to_add = organized_row[:2] + [organized_row[3]]
-                if row_to_add != HEADER_COLS:
-                    all_organized_rows.append(row_to_add)
+            # if not organized_row == ['']:
+            #     row_to_add = organized_row[:2] + [organized_row[3]]
+            #     if row_to_add != HEADER_COLS:
+            #         all_organized_rows.append(row_to_add)
 
     # Get all rows relating to (1) unnamed CCASS shareholding and (2) non-CCASS shareholding
     logger.info('Collecting other shareholding')
