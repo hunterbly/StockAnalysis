@@ -139,7 +139,6 @@ def main():
     for stock_code in stock_codes_sample:
 
         page_source = get_html(date, stock_code, copy.deepcopy(session_data))
-        print(page_source)
         all_shareholding_df = parse_data(page_source, stock_code, date)
         print(all_shareholding_df)
         #
@@ -198,46 +197,48 @@ def parse_data(page_source, stock_code, date):
     if 'No match record found' not in page_source:
         # Get all rows relating to CCASS shareholding
         # Only if there are CCASS shareholding in the first place
-        logger.info('Collecting CCASS shareholding.')
-        ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
+        logger.info('Collecting CCASS shareholders info')
 
-        try:
-            ccass_participant_shareholding_rows = ccass_participant_shareholding_table.find_all('tr')
-        except:
-            return None
-        for counter, row in enumerate(ccass_participant_shareholding_rows):
-            if counter == 0:
-                pass
-            else:
-                row = [i.get_text().strip() for i in row.find_all('td')]
-                print(row)
+        # ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
 
-                # Ensure rows are not empty or the header row
-                if not row == ['']:
-                    participant_id  = row[0].replace("Participant ID:\n", "")
-                    name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
-                    address         = row[2].replace("Address:\n", "")
-                    shareholding    = row[3].replace("Shareholding:\n", "")
-                    percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
+        # try:
+        #     ccass_participant_shareholding_rows = ccass_participant_shareholding_table.find_all('tr')
+        # except:
+        #     return None
+        # for counter, row in enumerate(ccass_participant_shareholding_rows):
+        #     if counter == 0:
+        #         pass
+        #     else:
+        #         row = [i.get_text().strip() for i in row.find_all('td')]
+        #         print(row)
+
+        #         # Ensure rows are not empty or the header row
+        #         if not row == ['']:
+        #             participant_id  = row[0].replace("Participant ID:\n", "")
+        #             name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
+        #             address         = row[2].replace("Address:\n", "")
+        #             shareholding    = row[3].replace("Shareholding:\n", "")
+        #             percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
                     
-                    # Remove special characters
-                    shareholding    = int(shareholding.replace(",", ""))
-                    percentage      = round(float(percentage.replace("%", ""))/100, 4)
+        #             # Remove special characters
+        #             shareholding    = int(shareholding.replace(",", ""))
+        #             percentage      = round(float(percentage.replace("%", ""))/100, 4)
 
-                    row_to_add      = [participant_id, name, address, shareholding, percentage]
-                    print(row_to_add)
-                    all_organized_rows.append(row_to_add)
-                else:
-                    logger.warning("Row data not available")
+        #             row_to_add      = [participant_id, name, address, shareholding, percentage]
+        #             print(row_to_add)
+        #             all_organized_rows.append(row_to_add)
+        #         else:
+        #             logger.warning("Row data not available")
             
-                
+    logger.info('Getting CCASS summary')
 
-    # Get all rows relating to (1) unnamed CCASS shareholding and (2) non-CCASS shareholding
-    logger.info('Collecting other shareholding')
-    holding_summary_table = soup.find('div', {'id': 'pnlResultSummary'})
-    holding_summary_rows = holding_summary_table.find_all('tr')
+    holding_summary_rows = soup.find('div', {'class': 'ccass-search-summary-table'}).contents
+    holding_summary_rows = [x for x in holding_summary_rows if not(isinstance(x, str))]
+
     # Parse each row of the summary table
     for row in holding_summary_rows:
+        print(row)
+        ## <<-- Up to here
         organized_row = [re.sub(' +', ' ', i.get_text().strip().replace('\n', '')) for i in row.find_all('td')]
 
         # Unnamed CCASS Shareholding
