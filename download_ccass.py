@@ -209,14 +209,28 @@ def parse_data(page_source, stock_code, date):
             if counter == 0:
                 pass
             else:
-                organized_row = [i.get_text().strip() for i in row.find_all('td')]
-                print(organized_row)
+                row = [i.get_text().strip() for i in row.find_all('td')]
+                print(row)
 
-            # Ensure rows are not empty or the header row
-            # if not organized_row == ['']:
-            #     row_to_add = organized_row[:2] + [organized_row[3]]
-            #     if row_to_add != HEADER_COLS:
-            #         all_organized_rows.append(row_to_add)
+                # Ensure rows are not empty or the header row
+                if not row == ['']:
+                    participant_id  = row[0].replace("Participant ID:\n", "")
+                    name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
+                    address         = row[2].replace("Address:\n", "")
+                    shareholding    = row[3].replace("Shareholding:\n", "")
+                    percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
+                    
+                    # Remove special characters
+                    shareholding    = int(shareholding.replace(",", ""))
+                    percentage      = float(percentage.replace("%", ""))/100
+
+                    row_to_add      = [participant_id, name, address, shareholding, percentage]
+                    print(row_to_add)
+                    all_organized_rows.append(row_to_add)
+                else:
+                    logger.warning("Row data not available")
+            
+                
 
     # Get all rows relating to (1) unnamed CCASS shareholding and (2) non-CCASS shareholding
     logger.info('Collecting other shareholding')
