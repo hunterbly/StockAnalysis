@@ -222,7 +222,7 @@ def parse_data(page_source, stock_code, date):
                     
                     # Remove special characters
                     shareholding    = int(shareholding.replace(",", ""))
-                    percentage      = float(percentage.replace("%", ""))/100
+                    percentage      = round(float(percentage.replace("%", ""))/100, 4)
 
                     row_to_add      = [participant_id, name, address, shareholding, percentage]
                     print(row_to_add)
