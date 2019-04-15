@@ -40,11 +40,17 @@ def check_availability(date):
     date_on_web_str = soup.find('input', {'id':'txtShareholdingDate'}).get('value')
     date_on_web_obj = datetime.datetime.strptime(date_on_web_str, '%Y/%m/%d').date()
 
-    if (date == date_on_web_obj):
-        pass
-    else:
-        logger.info("Data for {} is not available yet. latest date on web is {}.\nPlease try again later.".format(date, date_on_web_obj))
+    check_text = soup.body.findAll(text='Market Intermediaries')
+
+    if (not check_text):
+        logger.info("Data for {} is not available yet. Please try again later.".format(date))
         sys.exit(0)
+
+    elif(date != date_on_web_obj):
+        logger.info("Data for {} is not available yet. Latest date on web is {}. Please try again later.".format(date, date_on_web_obj))
+        sys.exit(0)
+    else:
+        pass
 
     real_date = date_on_web_obj
 
@@ -135,51 +141,6 @@ def get_or_post_data(method, url, data=None, headers=None):
             time.sleep(sleep_duration[idx])
             count += 1
 
-def main():
-    ######
-    # Parse program arguments
-    ######
-
-    df_input = '%Y-%m-%d'
-
-    arg = {
-        '-d': '',
-        '-i': '3',
-        '-ip': 'localhost'
-    }
-
-    for i in range(len(sys.argv)):
-        if sys.argv[i] in arg:
-            arg[sys.argv[i]] = sys.argv[i+1]
-
-    
-
-    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
-    logger.info("Start main function for date {}".format(date_input_obj))
-
-    real_date = check_availability(date_input_obj)
-
-    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date)
-
-    session_data = get_session_data()
-
-    stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
-
-    result = pd.DataFrame()
-
-    for stock_code in stock_codes_sample:
-
-        page_source = get_html(real_date, stock_code, copy.deepcopy(session_data))
-        all_shareholding_df = parse_data(page_source, stock_code, real_date)
-
-        
-        if(all_shareholding_df.shape[0] > 0):
-        	result = result.append(all_shareholding_df)
-        
-        logger.info("Finished parsing for code - {}".format(stock_code))
-
-    print(all_shareholding_df.head())
-
 def get_html(date, stock_code, data=None):
 
     url = 'http://www.hkexnews.hk/sdw/search/searchsdw.aspx'
@@ -191,7 +152,7 @@ def get_html(date, stock_code, data=None):
     # Fill in other data required by the POST request
     today = datetime.date.today()
     data['today'] = '{0:0>4}{1:0>2}{2:0>2}'.format(today.year, today.month, today.day)
-    data['txtShareholdingDate'] = '2019/04/07'
+    data['txtShareholdingDate'] = date.strftime("%Y/%m/%d")
     data['__EVENTTARGET'] = 'btnSearch'
     data['__EVENTARGUMENT'] = ''
     # data['ddlShareholdingDay'] = '{0:0>2}'.format(date.day)
@@ -219,7 +180,7 @@ def get_html(date, stock_code, data=None):
 
 def parse_data(page_source, stock_code, date):
     # Get page source
-    logger.info('Parsing page source')
+    logger.debug('Parsing page source')
     soup = BeautifulSoup(page_source, 'html.parser')
 
     # Initialize parameters
@@ -229,7 +190,7 @@ def parse_data(page_source, stock_code, date):
     if 'No match record found' not in page_source:
         # Get all rows relating to CCASS shareholding
         # Only if there are CCASS shareholding in the first place
-        logger.info('Collecting CCASS shareholders info')
+        logger.debug('Collecting CCASS shareholders info')
 
         ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
 
@@ -260,7 +221,7 @@ def parse_data(page_source, stock_code, date):
                 else:
                     logger.warning("Row data not available")
 
-        logger.info('Getting CCASS summary')
+        logger.debug('Getting CCASS summary')
 
         holding_summary_rows = soup.find('div', {'class': 'ccass-search-summary-table'}).contents
         holding_summary_rows = [x for x in holding_summary_rows if not(isinstance(x, str))]  # Remove some line break
@@ -304,7 +265,7 @@ def parse_data(page_source, stock_code, date):
             
 
     # Organize data into pandas dataframe and convert
-    logger.info('Organizing data to required format.')
+    # logger.info('Organizing data to required format.')
     HEADER_COLS = ['participant_code', 'participant', 'address', 'number', 'percentage']
 
     all_shareholding_df = pd.DataFrame(all_organized_rows, columns=HEADER_COLS)
@@ -314,6 +275,57 @@ def parse_data(page_source, stock_code, date):
     all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df
+
+def main():
+    ######
+    # Parse program arguments
+    ######
+
+    df_input = '%Y-%m-%d'
+
+    arg = {
+        '-d': '',
+        '-i': '3',
+        '-ip': 'localhost'
+    }
+
+    for i in range(len(sys.argv)):
+        if sys.argv[i] in arg:
+            arg[sys.argv[i]] = sys.argv[i+1]
+
+    
+
+    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
+    # date_input_obj = datetime.datetime.strptime('2019-05-01', df_input).date()
+    logger.info("=============================================")
+    logger.info("Start main function for date {}".format(date_input_obj))
+
+    real_date = check_availability(date_input_obj)
+
+    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date)
+
+    session_data = get_session_data()
+
+    #stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
+
+    result = pd.DataFrame()
+
+    for stock_code in stock_codes:
+        logger.info("=============================================")
+        logger.info("Start parsing for code - {}".format(stock_code))
+
+        page_source = get_html(real_date, stock_code, copy.deepcopy(session_data))
+        all_shareholding_df = parse_data(page_source, stock_code, real_date)
+
+        
+        if(all_shareholding_df.shape[0] > 0):
+        	result = result.append(all_shareholding_df)
+        
+        logger.info("Finished parsing for code - {}".format(stock_code))
+
+    print(all_shareholding_df.head())
+    logger.info("All done - {}".format(real_date))
+
 
 if __name__ == "__main__":
     main()
