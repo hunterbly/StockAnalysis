@@ -19,6 +19,37 @@ from urllib3.exceptions import ReadTimeoutError, ConnectTimeoutError
 __all__ = 'CCASS'
 logger = setup_logger(__all__)
 
+def check_availability(date):
+    """
+    Send single request to web to see if the latest data is available
+
+    Args:
+        date (DateTime): Date time object 
+
+    Returns:
+        real_date (DateTime): Real date listed on the web in python datetime format
+    """
+
+    logger.info("Checking if data is available - 00001")
+
+    session_data = get_session_data()
+    page_source = get_html(date, '00001', copy.deepcopy(session_data))
+    soup = BeautifulSoup(page_source, 'html.parser')
+
+    # Get real date
+    date_on_web_str = soup.find('input', {'id':'txtShareholdingDate'}).get('value')
+    date_on_web_obj = datetime.datetime.strptime(date_on_web_str, '%Y/%m/%d').date()
+
+    if (date == date_on_web_obj):
+        pass
+    else:
+        logger.info("Data for {} is not available yet. latest date on web is {}.\nPlease try again later.".format(date, date_on_web_obj))
+        sys.exit(0)
+
+    real_date = date_on_web_obj
+
+    return real_date
+
 def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
     # Go to page in hkex for entire stock code list
     # logger.info('Getting stock quotes from HKEXnews')
@@ -85,7 +116,6 @@ def get_or_post_data(method, url, data=None, headers=None):
     sleep_duration = [5,10,60,120,300,600,1200,2400]
     while True:
         try:
-            logger.info('Getting response from website.')
             if method == 'get':
                 response = requests.get(url, timeout=10)
             elif method == 'post':
@@ -106,8 +136,6 @@ def get_or_post_data(method, url, data=None, headers=None):
             count += 1
 
 def main():
-    logger.info("Start main function")
-
     ######
     # Parse program arguments
     ######
@@ -124,10 +152,14 @@ def main():
         if sys.argv[i] in arg:
             arg[sys.argv[i]] = sys.argv[i+1]
 
-    #date = datetime.datetime.now() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input)
-    date = datetime.datetime.strptime('2019-04-12', df_input)
+    
 
-    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = date)
+    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
+    logger.info("Start main function for date {}".format(date_input_obj))
+
+    real_date = check_availability(date_input_obj)
+
+    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date)
 
     session_data = get_session_data()
 
@@ -137,8 +169,8 @@ def main():
 
     for stock_code in stock_codes_sample:
 
-        page_source = get_html(date, stock_code, copy.deepcopy(session_data))
-        all_shareholding_df = parse_data(page_source, stock_code, date)
+        page_source = get_html(real_date, stock_code, copy.deepcopy(session_data))
+        all_shareholding_df = parse_data(page_source, stock_code, real_date)
 
         
         if(all_shareholding_df.shape[0] > 0):
@@ -146,7 +178,7 @@ def main():
         
         logger.info("Finished parsing for code - {}".format(stock_code))
 
-    print(all_shareholding_df.haed())
+    print(all_shareholding_df.head())
 
 def get_html(date, stock_code, data=None):
 
@@ -157,7 +189,6 @@ def get_html(date, stock_code, data=None):
         data = get_session_data()
 
     # Fill in other data required by the POST request
-    logger.info('Filling in other required info.')
     today = datetime.date.today()
     data['today'] = '{0:0>4}{1:0>2}{2:0>2}'.format(today.year, today.month, today.day)
     data['txtShareholdingDate'] = '2019/04/07'
