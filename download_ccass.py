@@ -61,7 +61,7 @@ def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
             continue
 
         # Add the stock code and stock name into the dictionary
-        stock_codes[row_contents[index_code].text.strip()] = row_contents[index_name].text.strip()
+        stock_codes[row_contents[index_code].text.strip()] = row_contents[index_name].text.replace("\n", "").strip()
 
     return stock_codes
 
@@ -125,12 +125,11 @@ def main():
             arg[sys.argv[i]] = sys.argv[i+1]
 
     #date = datetime.datetime.now() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input)
-    date = datetime.datetime.strptime('2019-04-03', df_input)
+    date = datetime.datetime.strptime('2019-04-12', df_input)
 
     stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = date)
 
     session_data = get_session_data()
-
 
     stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
 
@@ -141,11 +140,13 @@ def main():
         page_source = get_html(date, stock_code, copy.deepcopy(session_data))
         all_shareholding_df = parse_data(page_source, stock_code, date)
 
-        #
-        # if(all_shareholding_df.shape[0] > 0):
-        # 	result = result.append(all_shareholding_df)
-        #
-        # logger.info("Finished parsing for code - %s" % (stock_code))
+        
+        if(all_shareholding_df.shape[0] > 0):
+        	result = result.append(all_shareholding_df)
+        
+        logger.info("Finished parsing for code - {}".format(stock_code))
+
+    print(all_shareholding_df.haed())
 
 def get_html(date, stock_code, data=None):
 
@@ -273,15 +274,12 @@ def parse_data(page_source, stock_code, date):
 
     # Organize data into pandas dataframe and convert
     logger.info('Organizing data to required format.')
-    HEADER_COLS = ['participant_code', 'participant', 'address', 'number', 'listed_percentage']
+    HEADER_COLS = ['participant_code', 'participant', 'address', 'number', 'percentage']
 
     all_shareholding_df = pd.DataFrame(all_organized_rows, columns=HEADER_COLS)
     all_shareholding_df['code'] = stock_code
     all_shareholding_df['date'] = date
     
-    all_shareholding_df['ccass_percentage'] = all_shareholding_df['number'].apply(lambda x: x / float(sum(x)))
-    
-
     all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df
