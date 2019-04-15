@@ -140,7 +140,7 @@ def main():
 
         page_source = get_html(date, stock_code, copy.deepcopy(session_data))
         all_shareholding_df = parse_data(page_source, stock_code, date)
-        print(all_shareholding_df)
+
         #
         # if(all_shareholding_df.shape[0] > 0):
         # 	result = result.append(all_shareholding_df)
@@ -210,8 +210,7 @@ def parse_data(page_source, stock_code, date):
                 pass
             else:
                 row = [i.get_text().strip() for i in row.find_all('td')]
-                print(row)
-
+                
                 # Ensure rows are not empty or the header row
                 if not row == ['']:
                     participant_id  = row[0].replace("Participant ID:\n", "")
@@ -223,9 +222,8 @@ def parse_data(page_source, stock_code, date):
                     # Remove special characters
                     shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
                     percentage      = round(float(percentage.replace("%", ""))/100, 6)
-
                     row_to_add      = [participant_id, name, address, shareholding, percentage]
-                    print(row_to_add)
+                
                     all_organized_rows.append(row_to_add)
                 else:
                     logger.warning("Row data not available")
