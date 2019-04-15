@@ -199,73 +199,92 @@ def parse_data(page_source, stock_code, date):
         # Only if there are CCASS shareholding in the first place
         logger.info('Collecting CCASS shareholders info')
 
-        # ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
+        ccass_participant_shareholding_table = soup.find('table', {'class':['table-scroll', 'table-sort', 'table-mobile-list']})
 
-        # try:
-        #     ccass_participant_shareholding_rows = ccass_participant_shareholding_table.find_all('tr')
-        # except:
-        #     return None
-        # for counter, row in enumerate(ccass_participant_shareholding_rows):
-        #     if counter == 0:
-        #         pass
-        #     else:
-        #         row = [i.get_text().strip() for i in row.find_all('td')]
-        #         print(row)
+        try:
+            ccass_participant_shareholding_rows = ccass_participant_shareholding_table.find_all('tr')
+        except:
+            return None
+        for counter, row in enumerate(ccass_participant_shareholding_rows):
+            if counter == 0:
+                pass
+            else:
+                row = [i.get_text().strip() for i in row.find_all('td')]
+                print(row)
 
-        #         # Ensure rows are not empty or the header row
-        #         if not row == ['']:
-        #             participant_id  = row[0].replace("Participant ID:\n", "")
-        #             name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
-        #             address         = row[2].replace("Address:\n", "")
-        #             shareholding    = row[3].replace("Shareholding:\n", "")
-        #             percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
-                    
-        #             # Remove special characters
-        #             shareholding    = int(shareholding.replace(",", ""))
-        #             percentage      = round(float(percentage.replace("%", ""))/100, 4)
+                # Ensure rows are not empty or the header row
+                if not row == ['']:
+                    participant_id  = row[0].replace("Participant ID:\n", "")
+                    name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
+                    address         = row[2].replace("Address:\n", "")
+                    shareholding    = row[3].replace("Shareholding:\n", "")
+                    percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
 
-        #             row_to_add      = [participant_id, name, address, shareholding, percentage]
-        #             print(row_to_add)
-        #             all_organized_rows.append(row_to_add)
-        #         else:
-        #             logger.warning("Row data not available")
+                    # Remove special characters
+                    shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
+                    percentage      = round(float(percentage.replace("%", ""))/100, 6)
+
+                    row_to_add      = [participant_id, name, address, shareholding, percentage]
+                    print(row_to_add)
+                    all_organized_rows.append(row_to_add)
+                else:
+                    logger.warning("Row data not available")
+
+        logger.info('Getting CCASS summary')
+
+        holding_summary_rows = soup.find('div', {'class': 'ccass-search-summary-table'}).contents
+        holding_summary_rows = [x for x in holding_summary_rows if not(isinstance(x, str))]  # Remove some line break
+
+        # Parse each row of the summary table
+        for counter, row in enumerate(holding_summary_rows):
+          if(counter == 0):
+            # Skip header row
+            pass
+
+          else:
+
+            records = [x for x in row if not(isinstance(x, str))]  # Remove some line break
+            row_to_add = None
+
+            if(len(records) > 2):
+              participant_id = "999999"
+              name           = records[0].contents.pop(0).replace("\n", "").strip()
+              address        = ""
+              shareholding       = records[1].find("div", {"class": "value"}).contents.pop(0)
+              #no_of_participants = records[2].find("div", {"class": "value"}).contents.pop(0)
+              percentage         = records[3].find("div", {"class": "value"}).contents.pop(0)
+
+              # Remove special characters
+              shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
+              percentage      = round(float(percentage.replace("%", ""))/100, 6)
+
+              row_to_add      = [participant_id, name, address, shareholding, percentage]
+
+            elif(len(records) == 2):
+              # for the total case
+              participant_id = "999999"
+              name           = "Total issued shares"
+              address        = ""
+              shareholding   = int(records[1].contents.pop(0).replace(",", "").replace("\n", "").strip())
+              percentage     = 1
+
+              row_to_add      = [participant_id, name, address, shareholding, percentage]
+
+            all_organized_rows.append(row_to_add)
             
-    logger.info('Getting CCASS summary')
-
-    holding_summary_rows = soup.find('div', {'class': 'ccass-search-summary-table'}).contents
-    holding_summary_rows = [x for x in holding_summary_rows if not(isinstance(x, str))]
-
-    # Parse each row of the summary table
-    for row in holding_summary_rows:
-        print(row)
-        ## <<-- Up to here
-        organized_row = [re.sub(' +', ' ', i.get_text().strip().replace('\n', '')) for i in row.find_all('td')]
-
-        # Unnamed CCASS Shareholding
-        if organized_row[0] == 'Non-consenting Investor Participants':
-            all_organized_rows.append(['', 'Unnamed CCASS Shareholding', organized_row[1]])
-
-        # Calculate non-CCASS shareholding
-        elif organized_row[0] == 'Total':
-            total_ccass = int(organized_row[1].replace(',', ''))
-        elif organized_row[0].startswith('Total number of Issued Shares/Warrants/Units') or organized_row[0].startswith('Total number of A Shares listed and traded on the SSE/SZSE'):
-            # Ensure total CCASS shareholding is found, if not assume amount is 0.
-            # Normally this amount will not be 0 since the 'Total' row must come before
-            # the 'Total number of Issued Shares/Warrants/Units (last updated figure)' row
-            # With the only exception that there is no 'Total' row at all,
-            # which means all shares are held by non-CCASS participants
-            try:
-                total_ccass
-            except NameError:
-                total_ccass = 0
-            all_organized_rows.append(['', 'Non-CCASS Shareholding', int(organized_row[1].replace(',', '')) - total_ccass])
 
     # Organize data into pandas dataframe and convert
     logger.info('Organizing data to required format.')
+    HEADER_COLS = ['participant_code', 'participant', 'address', 'number', 'listed_percentage']
+
     all_shareholding_df = pd.DataFrame(all_organized_rows, columns=HEADER_COLS)
-    all_shareholding_df['Shareholding'] = all_shareholding_df['Shareholding'].apply(lambda x: int(str(x).replace(',', '')))
-    all_shareholding_df['Stock Code'] = stock_code
-    all_shareholding_df['Date'] = date
+    all_shareholding_df['code'] = stock_code
+    all_shareholding_df['date'] = date
+    
+    all_shareholding_df['ccass_percentage'] = all_shareholding_df['number'].apply(lambda x: x / float(sum(x)))
+    
+
+    all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df
 
