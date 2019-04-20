@@ -89,7 +89,7 @@ def check_db_records(date):
         logger.warning('CCASS Records exists in database for {}'.format(date))
         sys.exit()
     else:
-        logger.info('No CCASS record in Database for date {} - '.format(date))
+        logger.info('No CCASS record in Database for date - {}'.format(date))
 
     return None
 
@@ -114,6 +114,7 @@ def insert_to_db(df):
         conn.commit()
         conn.close()
 
+        logger.info("=============================================")
         logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into CCASS")
 
