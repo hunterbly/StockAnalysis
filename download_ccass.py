@@ -372,7 +372,7 @@ def main():
     check_db_records(real_date_obj)
 
     stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
-    stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
+    #stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
 
     # Initiate session
     session_data = get_session_data()
@@ -380,7 +380,7 @@ def main():
     # Initiate result dataframe
     result = pd.DataFrame()
 
-    for stock_code in stock_codes_sample:
+    for stock_code in stock_codes:
         logger.info("=============================================")
         logger.info("Start parsing for code - {}".format(stock_code))
 
@@ -396,7 +396,6 @@ def main():
     if len(all_shareholding_df) > 0:
         insert_to_db(df = all_shareholding_df)
 
-    print(all_shareholding_df.head())
     logger.info("=============================================")
     logger.info("All done - {}".format(real_date_obj))
     logger.info("=============================================")
