@@ -10,6 +10,7 @@ import datetime
 from utils.logger import setup_logger
 from requests.exceptions import ConnectionError
 
+import numpy as np
 import copy
 import re
 import pandas as pd
@@ -77,13 +78,18 @@ def check_db_records(date):
         result = cur.fetchall()
         conn.close()
 
-        logger.info('No CCASS records in Database for date - {}'.format(date))
+        logger.info('Checking CCASS records in Database for date - {}'.format(date))
     except:
-        logger.warning("Something wrong with date checking in database")
+        logger.warning("Something wrong with date checking in database. Probably no Database setup")
+        result = np.nan
 
-    if result[0][0] != 0:           # Return the first  element in the tuple
+    if np.isnan(result):
+        pass
+    elif result[0][0] != 0:           # Return the first element (count) in the tuple
         logger.warning('CCASS Records exists in database for {}'.format(date))
         sys.exit()
+    else:
+        logger.warning('No CCASS record in Database for date - '.format(date))
 
     return None
 
@@ -332,25 +338,26 @@ def main():
     logger.info("Start main function for date {}".format(date_input_obj))
 
     # Check if data available on web
-    real_date = check_web_availability(date_input_obj)
+    real_date_obj = check_web_availability(date_input_obj)
     
     # Check if data already in db
-    check_db_records(date)
+    check_db_records(real_date_obj)
 
-    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date)
+    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
+    stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
 
+    # Initiate session
     session_data = get_session_data()
 
-    #stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
-
+    # Initiate result dataframe
     result = pd.DataFrame()
 
-    for stock_code in stock_codes:
+    for stock_code in stock_codes_sample:
         logger.info("=============================================")
         logger.info("Start parsing for code - {}".format(stock_code))
 
-        page_source = get_html(real_date, stock_code, copy.deepcopy(session_data))
-        all_shareholding_df = parse_data(page_source, stock_code, real_date)
+        page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
+        all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
 
         
         if(all_shareholding_df.shape[0] > 0):
@@ -359,7 +366,7 @@ def main():
         logger.info("Finished parsing for code - {}".format(stock_code))
 
     print(all_shareholding_df.head())
-    logger.info("All done - {}".format(real_date))
+    logger.info("All done - {}".format(real_date_obj))
 
 
 if __name__ == "__main__":
