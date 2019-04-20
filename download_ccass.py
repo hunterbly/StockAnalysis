@@ -114,6 +114,7 @@ def insert_to_db(df):
         conn.commit()
         conn.close()
 
+        logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into CCASS")
 
     except:
