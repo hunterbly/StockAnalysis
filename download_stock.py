@@ -50,14 +50,18 @@ def check_db_records(date):
 
     connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
 
-    if (date == 'All'):
-        count_stmt = "SELECT COUNT(1) FROM stock"
-    else:
-        count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
+    count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
 
     try:
+        # Connect to Database
         conn = psycopg2.connect(connection_string)
         cur = conn.cursor()
+
+        if (date == 'All'):
+            count_stmt = "SELECT COUNT(1) FROM stock"
+        else:
+            count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
+        
         cur.execute(count_stmt)
         result = cur.fetchall()
         conn.close()
@@ -66,7 +70,7 @@ def check_db_records(date):
     except:
         logger.warning("Something wrong with date checking in database")
 
-    if result[0][0] != 0:           # Return the first  element in the tuple
+    if result[0][0] != 0:           # Return the first element in the tuple
         logger.warning('Records exists in database for {}'.format(date))
         sys.exit()
 

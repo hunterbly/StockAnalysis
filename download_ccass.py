@@ -19,7 +19,7 @@ from urllib3.exceptions import ReadTimeoutError, ConnectTimeoutError
 __all__ = 'CCASS'
 logger = setup_logger(__all__)
 
-def check_availability(date):
+def check_web_availability(date):
     """
     Send single request to web to see if the latest data is available
 
@@ -55,6 +55,37 @@ def check_availability(date):
     real_date = date_on_web_obj
 
     return real_date
+
+def check_db_records(date):
+    """
+    Check if there is records in the database, exit program if there is
+
+    Args:
+        date (DateTime): Date time object
+
+    Returns:
+        None
+    """
+
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    count_stmt = "SELECT COUNT(1) FROM ccass WHERE date = '{}'".format(date)
+
+    try:
+        conn = psycopg2.connect(connection_string)
+        cur = conn.cursor()
+        cur.execute(count_stmt)
+        result = cur.fetchall()
+        conn.close()
+
+        logger.info('No CCASS records in Database for date - {}'.format(date))
+    except:
+        logger.warning("Something wrong with date checking in database")
+
+    if result[0][0] != 0:           # Return the first  element in the tuple
+        logger.warning('CCASS Records exists in database for {}'.format(date))
+        sys.exit()
+
+    return None
 
 def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
     # Go to page in hkex for entire stock code list
@@ -300,7 +331,11 @@ def main():
     logger.info("=============================================")
     logger.info("Start main function for date {}".format(date_input_obj))
 
-    real_date = check_availability(date_input_obj)
+    # Check if data available on web
+    real_date = check_web_availability(date_input_obj)
+    
+    # Check if data already in db
+    check_db_records(date)
 
     stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date)
 
