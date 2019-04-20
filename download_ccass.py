@@ -89,9 +89,35 @@ def check_db_records(date):
         logger.warning('CCASS Records exists in database for {}'.format(date))
         sys.exit()
     else:
-        logger.warning('No CCASS record in Database for date - '.format(date))
+        logger.info('No CCASS record in Database for date {} - '.format(date))
 
     return None
+
+def insert_to_db(df):
+
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    df_columns = df.columns.values.tolist()
+
+    # create (col1,col2,...)
+    columns = ",".join(df_columns)
+
+    # create VALUES('%s', '%s",...) one '%s' per column
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
+
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('ccass', columns, values)
+    try:
+        conn = psycopg2.connect(connection_string)
+
+        cur = conn.cursor()
+        psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+        conn.commit()
+        conn.close()
+
+        logger.info("Finished insert into CCASS")
+
+    except:
+        logger.warning("No database available")
 
 def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
     # Go to page in hkex for entire stock code list
@@ -365,8 +391,13 @@ def main():
         
         logger.info("Finished parsing for code - {}".format(stock_code))
 
+    if len(all_shareholding_df) > 0:
+        insert_to_db(df = all_shareholding_df)
+
     print(all_shareholding_df.head())
+    logger.info("=============================================")
     logger.info("All done - {}".format(real_date_obj))
+    logger.info("=============================================")
 
 
 if __name__ == "__main__":
