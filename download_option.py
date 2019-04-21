@@ -13,9 +13,10 @@ __all__ = 'Option'
 logger = setup_logger(__all__)
 
 def main():
-    ######
-    # Parse program arguments
-    ######
+    
+    ###################################
+    ### Parse input arguments        ##
+    ###################################
 
     df_input = '%Y-%m-%d'
     df_webInput = '%y%m%d'
@@ -32,6 +33,16 @@ def main():
             arg[sys.argv[i]] = sys.argv[i+1]
 
     date_obj = datetime.now().date() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date()
+    
+    ###################################
+    ### Database checking            ##
+    ###################################
+
+    check_db_records(date_obj)
+
+    ###################################
+    ### Grep and parse data          ##
+    ###################################
 
     # Get from url
     page_source = get_html(date_obj = date_obj)
@@ -39,6 +50,10 @@ def main():
     # Parse page
     df_mapping  = parse_mapping(page = page_source, date_obj = date_obj)
     df_option   = parse_option(page = page_source, date_obj = date_obj)
+
+    ###################################
+    ### Processing data              ##
+    ###################################
 
     # Merge mapping table
     df_merge     = df_option.merge(df_mapping, on = "option_name", how = "left")
@@ -53,7 +68,10 @@ def main():
     df_filter[numeric_cols] = df_filter[numeric_cols].apply(pd.to_numeric, errors='coerce')
     df_filter['date'] = date_obj
 
-    # Write to db
+    ###################################
+    ### Insert to database           ##
+    ###################################
+    
     insert_to_db(df_filter)
 
     return None
@@ -241,6 +259,42 @@ def insert_to_db(df):
     except Exception as e:
         print(e)
         logger.warning("No database available")
+
+def check_db_records(date):
+    """
+    Check if there is records in the database, exit program if there is
+
+    Args:
+        date (DateTime): Date time object
+
+    Returns:
+        None
+    """
+
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    count_stmt = "SELECT COUNT(1) FROM option WHERE date = '{}'".format(date)
+
+    try:
+        conn = psycopg2.connect(connection_string)
+        cur = conn.cursor()
+        cur.execute(count_stmt)
+        result = cur.fetchall()
+        conn.close()
+
+        logger.info('Checking Option records in Database for date - {}'.format(date))
+    except:
+        logger.warning("Something wrong with date checking in database. Probably no database being setup")
+        result = np.nan
+
+    if np.isnan(result):
+        pass
+    elif result[0][0] != 0:           # Return the first element (count) in the tuple
+        logger.warning('Option records exist in database for {}'.format(date))
+        sys.exit()
+    else:
+        logger.info('No Option records in Database for date - {}'.format(date))
+
+    return None
 
 if __name__ == "__main__":
     main()

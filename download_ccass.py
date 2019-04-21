@@ -80,16 +80,16 @@ def check_db_records(date):
 
         logger.info('Checking CCASS records in Database for date - {}'.format(date))
     except:
-        logger.warning("Something wrong with date checking in database. Probably no Database setup")
+        logger.warning("Something wrong with date checking in database. Probably no Database being setup")
         result = np.nan
 
     if np.isnan(result):
         pass
     elif result[0][0] != 0:           # Return the first element (count) in the tuple
-        logger.warning('CCASS Records exists in database for {}'.format(date))
+        logger.warning('CCASS records exist in database for date - {}'.format(date))
         sys.exit()
     else:
-        logger.info('No CCASS record in Database for date - {}'.format(date))
+        logger.info('No CCASS records in Database for date - {}'.format(date))
 
     return None
 
