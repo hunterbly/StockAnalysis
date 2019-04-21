@@ -410,8 +410,8 @@ def main():
         else:
             pass
 
-    if len(all_shareholding_df) > 0:
-        insert_to_db(df = all_shareholding_df)
+    if len(result) > 0:
+        insert_to_db(df = result)
 
     logger.info("=============================================")
     logger.info("All done - {}".format(real_date_obj))
