@@ -13,7 +13,7 @@ __all__ = 'Option'
 logger = setup_logger(__all__)
 
 def main():
-    
+
     ###################################
     ### Parse input arguments        ##
     ###################################
@@ -90,6 +90,7 @@ def get_html(date_obj):
             logger.warning('Market closed')
             sys.exit(0)
         page = response.content.decode('utf-8').replace('\r\n','\n')
+        logger.info("=============================================")
         logger.info('Getting data for date - {}'.format(date_obj))
 
     except:
@@ -255,6 +256,7 @@ def insert_to_db(df):
         logger.info("=============================================")
         logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into CCASS")
+        logger.info("=============================================")
 
     except Exception as e:
         print(e)
@@ -289,10 +291,10 @@ def check_db_records(date):
     if np.isnan(result):
         pass
     elif result[0][0] != 0:           # Return the first element (count) in the tuple
-        logger.warning('Option records exist in database for {}'.format(date))
+        logger.warning('Option records exist in database for date - {}'.format(date))
         sys.exit()
     else:
-        logger.info('No Option records in Database for date - {}'.format(date))
+        logger.info('Finished checking. Processing')
 
     return None
 
