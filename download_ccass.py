@@ -271,11 +271,15 @@ def parse_data(page_source, stock_code, date):
                 
                 # Ensure rows are not empty or the header row
                 if not row == ['']:
-                    participant_id  = row[0].replace("Participant ID:\n", "")
+                    participant_id  = row[0].replace("Participant ID:", "").replace("\n","")
                     name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
                     address         = row[2].replace("Address:\n", "")
                     shareholding    = row[3].replace("Shareholding:\n", "")
-                    percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
+                    
+                    try:  # Some data has no percentage ffs. Hard cord to be zero
+                        percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
+                    except:
+                        percentage      = "0%"
 
                     # Remove special characters
                     shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
@@ -304,13 +308,20 @@ def parse_data(page_source, stock_code, date):
 
             if(len(records) > 2):
               participant_id = "999999"
-              name           = records[0].contents.pop(0).replace("\n", "").strip()
-              address        = ""
-              shareholding       = records[1].find("div", {"class": "value"}).contents.pop(0)
+              name               = records[0].contents
+              address            = ""
+              shareholding       = records[1].find("div", {"class": "value"}).contents
               #no_of_participants = records[2].find("div", {"class": "value"}).contents.pop(0)
-              percentage         = records[3].find("div", {"class": "value"}).contents.pop(0)
+              percentage         = records[3].find("div", {"class": "value"}).contents
+              
+              # if empty list
+              name               = name.pop(0)               if name else "(No name)"
+              shareholding       = shareholding.pop(0)       if shareholding else "0"
+              #no_of_participants = no_of_participants.pop(0) if no_of_participants else "0"
+              percentage         = percentage.pop(0)         if percentage else "0%"
 
               # Remove special characters
+              name            = name.replace("\n", "").strip()
               shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
               percentage      = round(float(percentage.replace("%", ""))/100, 6)
 
@@ -361,7 +372,8 @@ def main():
     
 
     date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
-    # date_input_obj = datetime.datetime.strptime('2019-05-01', df_input).date()
+    # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
+
     logger.info("=============================================")
     logger.info("Start main function for date {}".format(date_input_obj))
 
@@ -372,7 +384,8 @@ def main():
     check_db_records(real_date_obj)
 
     stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
-    #stock_codes_sample = dict(itertools.islice(stock_codes.items(), 3))
+    # stock_codes = dict(itertools.islice(stock_codes.items(), 3))
+    
 
     # Initiate session
     session_data = get_session_data()
