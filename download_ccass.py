@@ -163,6 +163,7 @@ def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
             continue
 
         # Add the stock code and stock name into the dictionary
+        
         stock_codes[row_contents[index_code].text.strip()] = row_contents[index_name].text.replace("\n", "").strip()
 
     return stock_codes
@@ -394,17 +395,20 @@ def main():
     result = pd.DataFrame()
 
     for stock_code in stock_codes:
-        logger.info("=============================================")
-        logger.info("Start parsing for code - {}".format(stock_code))
+        if int(stock_code) <= 10000:  # Stupid code > 70001 can not parse properly
+            logger.info("=============================================")
+            logger.info("Start parsing for code - {}".format(stock_code))
 
-        page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
-        all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
+            page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
+            all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
 
-        
-        if(all_shareholding_df.shape[0] > 0):
-        	result = result.append(all_shareholding_df)
-        
-        logger.info("Finished parsing for code - {}".format(stock_code))
+            
+            if(all_shareholding_df.shape[0] > 0):
+                result = result.append(all_shareholding_df)
+            
+            logger.info("Finished parsing for code - {}".format(stock_code))
+        else:
+            pass
 
     if len(all_shareholding_df) > 0:
         insert_to_db(df = all_shareholding_df)
