@@ -48,9 +48,10 @@ def main():
     df_filter = df_merge[(df_merge.option_date <= np.datetime64(max_date_obj))]  # Filter out rows that is n extra months away
     df_filter = df_filter.assign(option_desc = "")
 
-    # Change dtype to numeric
+    # Change dtype to numeric and add date column
     numeric_cols = ['strike', 'open', 'high', 'low', 'settle', 'delta_settle', 'iv', 'volume', 'oi', 'delta_oi', 'code']
     df_filter[numeric_cols] = df_filter[numeric_cols].apply(pd.to_numeric, errors='coerce')
+    df_filter['date'] = date_obj
 
     # Write to db
     insert_to_db(df_filter)
