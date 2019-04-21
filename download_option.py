@@ -41,14 +41,18 @@ def main():
     df_mapping  = parse_mapping(page = page_source, date_obj = date_obj)
     df_option   = parse_option(page = page_source, date_obj = date_obj)
 
-    # Join mapping 
+    # Merge mapping table
     df_merge     = df_option.merge(df_mapping, on = "option_name", how = "left")
     max_date_obj = get_max_date(date_obj = date_obj, extra_month = 2)
     
     # filter by max_date
     df_filter = df_merge[(df_merge.option_date <= np.datetime64(max_date_obj))]  # Filter out rows that is n extra months away 
-    df_filter.assign(option_desc = "")
+    df_filter = df_filter.assign(option_desc = "")
     
+    # Change dtype to numeric
+    numeric_cols = ['strike', 'open', 'high', 'low', 'settle', 'delta_settle', 'iv', 'volumn', 'oi', 'delta_oi', 'code']
+    df_filter[numeric_cols] = df_filter[numeric_cols].apply(pd.to_numeric, errors='coerce')
+
     print(df_filter.head())
     
 
