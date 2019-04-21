@@ -32,7 +32,7 @@ def main():
             arg[sys.argv[i]] = sys.argv[i+1]
 
     date_obj = datetime.now().date() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date()
-    
+
     # Get from url
     page_source = get_html(date_obj = date_obj)
 
@@ -55,17 +55,24 @@ def main():
     # Write to db
     insert_to_db(df_filter)
 
+    return None
+
 
 def get_html(date_obj):
+
+    """ Get reponse from url """
+
     try:
         date_str = date_obj.strftime('%y%m%d')
 
         url = 'http://www.hkex.com.hk/eng/stat/dmstat/dayrpt/dqe' + date_str + '.htm'
         response = requests.get(url)
         if response.content.decode('utf-8').find('The page requested may have been relocated') != -1:
-            logger.info('Market closed.')
+            logger.warning('Market closed')
             sys.exit(0)
         page = response.content.decode('utf-8').replace('\r\n','\n')
+        logger.info('Getting data for date - {}'.format(date_obj))
+
     except:
         logger.error('The website cannot be reached')
         sys.exit(0)
@@ -73,6 +80,31 @@ def get_html(date_obj):
     return(page)
 
 def parse_mapping(page, date_obj):
+
+    """
+    Parse mapping table to match option code to underlying stock
+
+    Args:
+        page (str): Reponse get from the url
+        date_obj (Datetime): Python date object for the option to be parsed
+
+    Returns:
+        df (Dataframe): Mapping table for option code to stock code
+
+    Example:
+        input_date_obj = datetime.strptime("2019-04-18", "%Y-%m-%d").date()
+        page           = get_html(input_date_obj)
+        df_mapping     = parse_mapping(page, input_date_obj)
+
+    Data preview:
+          option_name   code    option_desc
+             A50        2823  X ISHARES A50
+             AAC        2018       AAC TECH
+             ACC        0914    ANHUI CONCH
+             AIA        1299            AIA
+             AIR        0753      AIR CHINA
+    """
+
     summary = page.split('<A NAME="SUMMARY">')[1]
     mapping_list = []
 
@@ -101,6 +133,30 @@ def parse_mapping(page, date_obj):
     return(df)
 
 def parse_option(page, date_obj):
+
+    """
+    Parse option data
+
+    Args:
+        page (str): Reponse get from the url
+        date_obj (Datetime): Python date object for the option to be parsed
+
+    Returns:
+        df (Dataframe): Option data
+
+    Example:
+        input_date_obj = datetime.strptime("2019-04-18", "%Y-%m-%d").date()
+        page           = get_html(input_date_obj)
+        df_obtion      = parse_option(page, input_date_obj)
+
+    Data preview:
+        option_name option_date  strike contract  open  high   low  settle  delta_settle  iv  volumn    oi  delta_oi  code option_desc
+                A50  2019-04-30    7.50        C  0.00  0.00  0.00    8.06         -0.12   0       0     0       0.0  2823
+                A50  2019-04-30    7.75        C  0.00  0.00  0.00    7.81         -0.12   0       0     0       0.0  2823
+                A50  2019-04-30    8.00        C  0.00  0.00  0.00    7.56         -0.12   0       0     0       0.0  2823
+                A50  2019-04-30    8.25        C  0.00  0.00  0.00    7.31         -0.12   0       0     0       0.0  2823
+    """
+
     summary     = page.split('<A NAME="SUMMARY">')[1]
     options     = summary.split('<A NAME="')[1:]
     all_rows    = []
@@ -130,6 +186,8 @@ def parse_option(page, date_obj):
     col_name = ['option_name', 'option_date', 'strike', 'contract', 'open', 'high', 'low', 'settle', 'delta_settle', 'iv', 'volume', 'oi', 'delta_oi']
     df       = pd.DataFrame(all_rows, columns=col_name)
 
+    logger.info('Parsing data for date - {}'.format(date_obj))
+
     return(df)
 
 def get_max_date(date_obj, extra_month):
@@ -153,6 +211,8 @@ def get_max_date(date_obj, extra_month):
     return(max_date_obj)
 
 def insert_to_db(df):
+
+    """ insert data to database """
 
     connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
     df_columns = df.columns.values.tolist()
