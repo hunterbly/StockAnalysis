@@ -53,7 +53,8 @@ def main():
     numeric_cols = ['strike', 'open', 'high', 'low', 'settle', 'delta_settle', 'iv', 'volumn', 'oi', 'delta_oi', 'code']
     df_filter[numeric_cols] = df_filter[numeric_cols].apply(pd.to_numeric, errors='coerce')
 
-    print(df_filter.head())
+    # Write to db
+    insert_to_db(df_filter)
     
 
 def get_html(date_obj):
@@ -151,6 +152,34 @@ def get_max_date(date_obj, extra_month):
 
     max_date_obj = date_obj + relativedelta(months = extra_month) + relativedelta(day=31) # if date = 2019-04-12, extra = 2, return 2019-06-30
     return(max_date_obj)
+
+def insert_to_db(df):
+
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    df_columns = df.columns.values.tolist()
+
+    # create (col1,col2,...)
+    columns = ",".join(df_columns)
+
+    # create VALUES('%s', '%s",...) one '%s' per column
+    values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
+
+    #create INSERT INTO table (columns) VALUES('%s',...)
+    insert_stmt = "INSERT INTO {} ({}) {}".format('option', columns, values)
+    try:
+        conn = psycopg2.connect(connection_string)
+
+        cur = conn.cursor()
+        psycopg2.extras.execute_batch(cur, insert_stmt, df.values)
+        conn.commit()
+        conn.close()
+
+        logger.info("=============================================")
+        logger.info("No of records - {}".format(df.shape[0]))
+        logger.info("Finished insert into CCASS")
+
+    except:
+        logger.warning("No database available")
 
 if __name__ == "__main__":
     main()
