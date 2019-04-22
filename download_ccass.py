@@ -20,6 +20,75 @@ from urllib3.exceptions import ReadTimeoutError, ConnectTimeoutError
 __all__ = 'CCASS'
 logger = setup_logger(__all__)
 
+
+def main():
+    ######
+    # Parse program arguments
+    ######
+
+    df_input  = '%Y-%m-%d'
+    threshold = 0.001        # Threshold of minimum percentage of the stock to be saved in the database
+
+    arg = {
+        '-d': '',
+        '-i': '3',
+        '-ip': 'localhost'
+    }
+
+    for i in range(len(sys.argv)):
+        if sys.argv[i] in arg:
+            arg[sys.argv[i]] = sys.argv[i+1]
+
+    
+
+    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
+    # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
+
+    logger.info("=============================================")
+    logger.info("Start main function for date {}".format(date_input_obj))
+
+    # Check if data available on web
+    real_date_obj = check_web_availability(date_input_obj)
+    
+    # Check if data already in db
+    check_db_records(real_date_obj)
+
+    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
+    # stock_codes = dict(itertools.islice(stock_codes.items(), 3))
+    
+
+    # Initiate session
+    session_data = get_session_data()
+
+    # Initiate result dataframe
+    result = pd.DataFrame()
+
+    for stock_code in stock_codes:
+        if int(stock_code) <= 10000:  # Stupid code > 70001 can not parse properly
+            logger.info("=============================================")
+            logger.info("Start parsing for code - {}".format(stock_code))
+
+            page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
+            all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
+
+            
+            if(all_shareholding_df.shape[0] > 0):
+                result = result.append(all_shareholding_df)
+            
+            logger.info("Finished parsing for code - {}".format(stock_code))
+        else:
+            pass
+
+    if len(result) > 0:
+        # Apply threshold to limit no of records to be saved in the database
+        result = result[result.percentage <= threshold]
+
+        insert_to_db(df = result)
+
+    logger.info("=============================================")
+    logger.info("All done - {}".format(real_date_obj))
+    logger.info("=============================================")
+
 def check_web_availability(date):
     """
     Send single request to web to see if the latest data is available
@@ -284,7 +353,7 @@ def parse_data(page_source, stock_code, date):
 
                     # Remove special characters
                     shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
-                    percentage      = round(float(percentage.replace("%", ""))/100, 6)
+                    percentage      = round(float(percentage.replace("%", ""))/100, 8)
                     row_to_add      = [participant_id, name, address, shareholding, percentage]
                 
                     all_organized_rows.append(row_to_add)
@@ -324,7 +393,7 @@ def parse_data(page_source, stock_code, date):
               # Remove special characters
               name            = name.replace("\n", "").strip()
               shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
-              percentage      = round(float(percentage.replace("%", ""))/100, 6)
+              percentage      = round(float(percentage.replace("%", ""))/100, 8)
 
               row_to_add      = [participant_id, name, address, shareholding, percentage]
 
@@ -352,71 +421,6 @@ def parse_data(page_source, stock_code, date):
     all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df
-
-def main():
-    ######
-    # Parse program arguments
-    ######
-
-    df_input = '%Y-%m-%d'
-
-    arg = {
-        '-d': '',
-        '-i': '3',
-        '-ip': 'localhost'
-    }
-
-    for i in range(len(sys.argv)):
-        if sys.argv[i] in arg:
-            arg[sys.argv[i]] = sys.argv[i+1]
-
-    
-
-    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
-    # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
-
-    logger.info("=============================================")
-    logger.info("Start main function for date {}".format(date_input_obj))
-
-    # Check if data available on web
-    real_date_obj = check_web_availability(date_input_obj)
-    
-    # Check if data already in db
-    check_db_records(real_date_obj)
-
-    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
-    # stock_codes = dict(itertools.islice(stock_codes.items(), 3))
-    
-
-    # Initiate session
-    session_data = get_session_data()
-
-    # Initiate result dataframe
-    result = pd.DataFrame()
-
-    for stock_code in stock_codes:
-        if int(stock_code) <= 10000:  # Stupid code > 70001 can not parse properly
-            logger.info("=============================================")
-            logger.info("Start parsing for code - {}".format(stock_code))
-
-            page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
-            all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
-
-            
-            if(all_shareholding_df.shape[0] > 0):
-                result = result.append(all_shareholding_df)
-            
-            logger.info("Finished parsing for code - {}".format(stock_code))
-        else:
-            pass
-
-    if len(result) > 0:
-        insert_to_db(df = result)
-
-    logger.info("=============================================")
-    logger.info("All done - {}".format(real_date_obj))
-    logger.info("=============================================")
-
 
 if __name__ == "__main__":
     main()
