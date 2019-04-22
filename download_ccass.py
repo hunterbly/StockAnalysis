@@ -81,7 +81,7 @@ def main():
 
     if len(result) > 0:
         # Apply threshold to limit no of records to be saved in the database
-        result = result[result.percentage <= threshold]
+        result = result[result.percentage >= threshold]
 
         insert_to_db(df = result)
 
