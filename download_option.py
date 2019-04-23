@@ -255,7 +255,7 @@ def insert_to_db(df):
 
         logger.info("=============================================")
         logger.info("No of records - {}".format(df.shape[0]))
-        logger.info("Finished insert into CCASS")
+        logger.info("Finished insert into Option")
         logger.info("=============================================")
 
     except Exception as e:
