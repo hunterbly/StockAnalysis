@@ -115,3 +115,9 @@ venv.bak/
 
 test.py
 .ftpconfig
+
+# exclude everything
+spaghetti/*
+
+# exception to the rule
+!spaghetti/.gitkeep 
