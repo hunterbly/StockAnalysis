@@ -121,3 +121,6 @@ spaghetti/*
 
 # exception to the rule
 !spaghetti/.gitkeep 
+
+# excluse env folder
+env/*
