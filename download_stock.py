@@ -48,7 +48,7 @@ def check_db_records(date):
         None
     """
 
-    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' port = 4004 password='P@ssw0rDB'"
 
     count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
 
