@@ -137,7 +137,7 @@ def check_db_records(date):
         None
     """
 
-    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' port = 4004 password='P@ssw0rDB'"
     count_stmt = "SELECT COUNT(1) FROM ccass WHERE date = '{}'".format(date)
 
     try:
@@ -164,7 +164,7 @@ def check_db_records(date):
 
 def insert_to_db(df):
 
-    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' password='P@ssw0rDB'"
+    connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' port = 4004 password='P@ssw0rDB'"
     df_columns = df.columns.values.tolist()
 
     # create (col1,col2,...)
