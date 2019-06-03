@@ -40,8 +40,8 @@ def main():
             arg[sys.argv[i]] = sys.argv[i+1]
 
 
-
-    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
+    # Get yesterday if no input date
+    date_input_obj = datetime.datetime.now().date()  - datetime.timedelta(days=1) if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
     # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
 
     logger.info("=============================================")
