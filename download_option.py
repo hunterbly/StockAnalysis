@@ -257,9 +257,8 @@ def insert_to_db(df):
         logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into Option")
 
-        date = datetime.date.today()
         logger.info("=============================================")
-        logger.info("STATUS - {} - {SUCCESS}".format(date))
+        logger.info("STATUS - SUCCESS")
 
     except Exception as e:
         print(e)
