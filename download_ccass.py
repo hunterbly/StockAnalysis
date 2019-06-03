@@ -39,9 +39,9 @@ def main():
         if sys.argv[i] in arg:
             arg[sys.argv[i]] = sys.argv[i+1]
 
-    
 
-    date_input_obj = datetime.datetime.now().date() if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
+    # Get yesterday if no input date
+    date_input_obj = datetime.datetime.now().date()  - datetime.timedelta(days=1) if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
     # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
 
     logger.info("=============================================")
@@ -49,13 +49,13 @@ def main():
 
     # Check if data available on web
     real_date_obj = check_web_availability(date_input_obj)
-    
+
     # Check if data already in db
     check_db_records(real_date_obj)
 
     stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
     # stock_codes = dict(itertools.islice(stock_codes.items(), 3))
-    
+
 
     # Initiate session
     session_data = get_session_data()
@@ -71,10 +71,10 @@ def main():
             page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
             all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
 
-            
+
             if(all_shareholding_df.shape[0] > 0):
                 result = result.append(all_shareholding_df)
-            
+
             logger.info("Finished parsing for code - {}".format(stock_code))
         else:
             pass
@@ -94,7 +94,7 @@ def check_web_availability(date):
     Send single request to web to see if the latest data is available
 
     Args:
-        date (DateTime): Date time object 
+        date (DateTime): Date time object
 
     Returns:
         real_date (DateTime): Real date listed on the web in python datetime format
@@ -187,6 +187,10 @@ def insert_to_db(df):
         logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into CCASS")
 
+        date = datetime.date.today()
+        logger.info("=============================================")
+        logger.info("STATUS - {} - {SUCCESS}".format(date)
+
     except:
         logger.warning("No database available")
 
@@ -232,7 +236,7 @@ def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
             continue
 
         # Add the stock code and stock name into the dictionary
-        
+
         stock_codes[row_contents[index_code].text.strip()] = row_contents[index_name].text.replace("\n", "").strip()
 
     return stock_codes
@@ -338,14 +342,14 @@ def parse_data(page_source, stock_code, date):
                 pass
             else:
                 row = [i.get_text().strip() for i in row.find_all('td')]
-                
+
                 # Ensure rows are not empty or the header row
                 if not row == ['']:
                     participant_id  = row[0].replace("Participant ID:", "").replace("\n","")
                     name            = row[1].replace("Name of CCASS Participant (* for Consenting Investor Participants ):\n", "")
                     address         = row[2].replace("Address:\n", "")
                     shareholding    = row[3].replace("Shareholding:\n", "")
-                    
+
                     try:  # Some data has no percentage ffs. Hard cord to be zero
                         percentage      = row[4].replace("% of the total number of Issued Shares/ Warrants/ Units:\n", "")
                     except:
@@ -355,7 +359,7 @@ def parse_data(page_source, stock_code, date):
                     shareholding    = int(shareholding.replace(",", "").replace("\n", "").strip())
                     percentage      = round(float(percentage.replace("%", ""))/100, 8)
                     row_to_add      = [participant_id, name, address, shareholding, percentage]
-                
+
                     all_organized_rows.append(row_to_add)
                 else:
                     logger.warning("Row data not available")
@@ -383,7 +387,7 @@ def parse_data(page_source, stock_code, date):
               shareholding       = records[1].find("div", {"class": "value"}).contents
               #no_of_participants = records[2].find("div", {"class": "value"}).contents.pop(0)
               percentage         = records[3].find("div", {"class": "value"}).contents
-              
+
               # if empty list
               name               = name.pop(0)               if name else "(No name)"
               shareholding       = shareholding.pop(0)       if shareholding else "0"
@@ -408,7 +412,7 @@ def parse_data(page_source, stock_code, date):
               row_to_add      = [participant_id, name, address, shareholding, percentage]
 
             all_organized_rows.append(row_to_add)
-            
+
 
     # Organize data into pandas dataframe and convert
     # logger.info('Organizing data to required format.')
@@ -417,7 +421,7 @@ def parse_data(page_source, stock_code, date):
     all_shareholding_df = pd.DataFrame(all_organized_rows, columns=HEADER_COLS)
     all_shareholding_df['code'] = stock_code
     all_shareholding_df['date'] = date
-    
+
     all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df

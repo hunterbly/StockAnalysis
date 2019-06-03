@@ -61,7 +61,7 @@ def check_db_records(date):
             count_stmt = "SELECT COUNT(1) FROM stock"
         else:
             count_stmt = "SELECT COUNT(1) FROM stock WHERE date = '{}'".format(date)
-        
+
         cur.execute(count_stmt)
         result = cur.fetchall()
         conn.close()
@@ -228,6 +228,10 @@ def insert_to_db(df):
 
         logger.info("Finished insert into stock")
 
+        date = datetime.date.today()
+        logger.info("=============================================")
+        logger.info("STATUS - {} - {SUCCESS}".format(date)
+
     except:
         logger.warning("No database available")
 
@@ -275,7 +279,7 @@ def main():
 
     if len(res) > 0:
         insert_to_db(res)
-        
+
     logger.info("Finished downloading data - {}".format(date))
 
 if __name__ == "__main__":
