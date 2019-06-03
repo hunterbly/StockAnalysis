@@ -189,7 +189,7 @@ def insert_to_db(df):
 
         date = datetime.date.today()
         logger.info("=============================================")
-        logger.info("STATUS - {} - {SUCCESS}".format(date)
+        logger.info("STATUS - {} - {SUCCESS}".format(date))
 
     except:
         logger.warning("No database available")
