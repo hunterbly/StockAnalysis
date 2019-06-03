@@ -33,7 +33,7 @@ def main():
             arg[sys.argv[i]] = sys.argv[i+1]
 
     date_obj = datetime.now().date() if arg['-d'] == '' else datetime.strptime(arg['-d'], df_input).date()
-    
+
     ###################################
     ### Database checking            ##
     ###################################
@@ -71,7 +71,7 @@ def main():
     ###################################
     ### Insert to database           ##
     ###################################
-    
+
     insert_to_db(df_filter)
 
     return None
@@ -256,7 +256,10 @@ def insert_to_db(df):
         logger.info("=============================================")
         logger.info("No of records - {}".format(df.shape[0]))
         logger.info("Finished insert into Option")
+
+        date = datetime.date.today()
         logger.info("=============================================")
+        logger.info("STATUS - {} - {SUCCESS}".format(date))
 
     except Exception as e:
         print(e)

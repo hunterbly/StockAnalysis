@@ -191,7 +191,6 @@ def insert_to_db(df):
         logger.info("=============================================")
         logger.info("STATUS - {} - {SUCCESS}".format(date)
 
-
     except:
         logger.warning("No database available")
 
