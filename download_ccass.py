@@ -188,7 +188,7 @@ def insert_to_db(df):
         logger.info("Finished insert into CCASS")
 
         logger.info("=============================================")
-        logger.info("STATUS - {SUCCESS}")
+        logger.info("STATUS - SUCCESS")
 
     except:
         logger.warning("No database available")
