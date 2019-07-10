@@ -261,9 +261,9 @@ def get_or_post_data(method, url, data=None, headers=None):
     while True:
         try:
             if method == 'get':
-                response = requests.get(url, timeout=10)
+                response = requests.get(url, timeout=10, verify=False)
             elif method == 'post':
-                response = requests.post(url, data=data, headers=headers, timeout=10)
+                response = requests.post(url, data=data, headers=headers, timeout=10, verify=False)
             else:
                 logger.info('Method NOT stated.')
                 raise ConnectionAbortedError
