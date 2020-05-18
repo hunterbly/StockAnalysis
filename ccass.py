@@ -22,7 +22,63 @@ logger = setup_logger(__all__)
 
 
 def test():
-    print("Test")
+
+    date_input_obj = datetime.datetime.strptime('2020-05-13', '%Y-%m-%d').date()
+    date_obj = date_input_obj
+
+    logger.info("=============================================")
+    logger.info("Start main function for date {}".format(date_input_obj))
+
+    # Check if data available on web
+    # real_date_obj = check_web_availability(date_input_obj)
+
+    url = 'http://www.hkexnews.hk/sdw/search/searchsdw.aspx'
+    response = requests.get(url, timeout=10, verify=False)
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+    session_data = {}
+
+    for tag in soup.find_all('input'):
+
+        if tag['id'] == '__VIEWSTATE' or tag['id'] == '__VIEWSTATEGENERATOR' or tag['id'] == '__EVENTVALIDATION':
+            session_data[tag['id']] = tag['value']
+
+    url = 'http://www.hkexnews.hk/sdw/search/searchsdw.aspx'
+    today = datetime.date.today()
+    data = session_data
+    stock_code = '00001'
+
+    data['today'] = '{0:0>4}{1:0>2}{2:0>2}'.format(today.year, today.month, today.day)
+    data['txtShareholdingDate'] = date_obj.strftime("%Y/%m/%d")
+    data['__EVENTTARGET'] = 'btnSearch'
+    data['__EVENTARGUMENT'] = ''
+    data['sortDirection'] = 'desc'
+    data['txtStockCode'] = stock_code
+    data['sortBy'] = 'shareholding'
+    data['txtselPartID'] = ''
+    data['alertMsg'] = ''
+    data['txtStockName'] = ''
+    data['txtParticipantID'] = ''
+    data['txtParticipantName'] = ''
+    data['btnSearch.x'] = '42'
+    data['btnSearch.y'] = '9'
+
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(data)
+
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
+               'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
+               'Referer': 'http://www.hkexnews.hk/sdw/search/searchsdw_c.aspx'}
+
+    # Get response from website
+    response = requests.post(url, data=data, headers=headers, timeout=10, verify=False)
+    res = response.content.decode('utf8')
+
+    import ipdb; ipdb.set_trace()
+
+    return(response)
+
 
 def main():
     ######
@@ -104,6 +160,7 @@ def check_web_availability(date):
     logger.info("Checking if data is available - 00001")
 
     session_data = get_session_data()
+
     page_source = get_html(date, '00001', copy.deepcopy(session_data))
     soup = BeautifulSoup(page_source, 'html.parser')
 
@@ -256,6 +313,9 @@ def get_session_data():
     for tag in soup.find_all('input'):
         if tag['id'] == '__VIEWSTATE' or tag['id'] == '__VIEWSTATEGENERATOR' or tag['id'] == '__EVENTVALIDATION':
             session_data[tag['id']] = tag['value']
+
+    import ipdb; ipdb.set_trace()
+
     return session_data
 
 
