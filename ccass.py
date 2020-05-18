@@ -23,7 +23,6 @@ logger = setup_logger(__all__)
 
 def test():
     print("Test")
-    
 
 def main():
     ######
@@ -43,7 +42,6 @@ def main():
         if sys.argv[i] in arg:
             arg[sys.argv[i]] = sys.argv[i+1]
 
-
     # Get yesterday if no input date
     date_input_obj = datetime.datetime.now().date()  - datetime.timedelta(days=1) if arg['-d'] == '' else datetime.datetime.strptime(arg['-d'], df_input).date()
     # date_input_obj = datetime.datetime.strptime('2019-04-18', df_input).date()
@@ -57,9 +55,8 @@ def main():
     # Check if data already in db
     check_db_records(real_date_obj)
 
-    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date = real_date_obj)
+    stock_codes = get_all_stock_quotes_from_hkexnews('CCASS', date=real_date_obj)
     # stock_codes = dict(itertools.islice(stock_codes.items(), 3))
-
 
     # Initiate session
     session_data = get_session_data()
@@ -75,7 +72,6 @@ def main():
             page_source = get_html(real_date_obj, stock_code, copy.deepcopy(session_data))
             all_shareholding_df = parse_data(page_source, stock_code, real_date_obj)
 
-
             if(all_shareholding_df.shape[0] > 0):
                 result = result.append(all_shareholding_df)
 
@@ -87,11 +83,12 @@ def main():
         # Apply threshold to limit no of records to be saved in the database
         result = result[result.percentage >= threshold]
 
-        insert_to_db(df = result)
+        insert_to_db(df=result)
 
     logger.info("=============================================")
     logger.info("All done - {}".format(real_date_obj))
     logger.info("=============================================")
+
 
 def check_web_availability(date):
     """
@@ -130,6 +127,7 @@ def check_web_availability(date):
 
     return real_date
 
+
 def check_db_records(date):
     """
     Check if there is records in the database, exit program if there is
@@ -166,6 +164,7 @@ def check_db_records(date):
 
     return None
 
+
 def insert_to_db(df):
 
     connection_string = "dbname='stock' user='db_user' host='" + 'localhost' + "' port = 4004 password='P@ssw0rDB'"
@@ -177,7 +176,7 @@ def insert_to_db(df):
     # create VALUES('%s', '%s",...) one '%s' per column
     values = "VALUES({})".format(",".join(["%s" for _ in df_columns]))
 
-    #create INSERT INTO table (columns) VALUES('%s',...)
+    # create INSERT INTO table (columns) VALUES('%s',...)
     insert_stmt = "INSERT INTO {} ({}) {}".format('ccass', columns, values)
     try:
         conn = psycopg2.connect(connection_string)
@@ -196,6 +195,7 @@ def insert_to_db(df):
 
     except:
         logger.warning("No database available")
+
 
 def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
     # Go to page in hkex for entire stock code list
@@ -244,6 +244,7 @@ def get_all_stock_quotes_from_hkexnews(purpose, date=datetime.date.today()):
 
     return stock_codes
 
+
 def get_session_data():
     url = 'http://www.hkexnews.hk/sdw/search/searchsdw.aspx'
 
@@ -261,7 +262,7 @@ def get_session_data():
 def get_or_post_data(method, url, data=None, headers=None):
     # For handling block IP issues
     count = 0
-    sleep_duration = [5,10,60,120,300,600,1200,2400]
+    sleep_duration = [5, 10, 60, 120, 300, 600, 1200, 2400]
     while True:
         try:
             if method == 'get':
@@ -282,6 +283,7 @@ def get_or_post_data(method, url, data=None, headers=None):
                 idx = len(sleep_duration) - 1
             time.sleep(sleep_duration[idx])
             count += 1
+
 
 def get_html(date, stock_code, data=None):
 
@@ -319,6 +321,7 @@ def get_html(date, stock_code, data=None):
     response = get_or_post_data('post', url, data=data, headers=headers)
 
     return response.content.decode('utf8')
+
 
 def parse_data(page_source, stock_code, date):
     # Get page source
@@ -416,7 +419,6 @@ def parse_data(page_source, stock_code, date):
 
             all_organized_rows.append(row_to_add)
 
-
     # Organize data into pandas dataframe and convert
     # logger.info('Organizing data to required format.')
     HEADER_COLS = ['participant_code', 'participant', 'address', 'number', 'percentage']
@@ -428,6 +430,7 @@ def parse_data(page_source, stock_code, date):
     all_shareholding_df.drop(['participant', 'address'], axis=1, inplace=True)
 
     return all_shareholding_df
+
 
 if __name__ == "__main__":
     res = test()
